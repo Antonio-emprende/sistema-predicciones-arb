@@ -1,84 +1,85 @@
-// Cargar librerías necesarias
+// Librerías necesarias
 const express = require('express');
 const sql = require('mssql');
-const path = require('path'); // 🔧 Agregado para evitar errores de rutas
+const path = require('path');
 const app = express();
 
-// ⚙️ Configuración de conexión a Azure SQL
+// ⚙️ Configuración segura para Azure SQL
 const config = {
   server: process.env.DB_SERVER,
   database: process.env.DB_NAME,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   options: {
-    encrypt: true,                // Obligatorio para Azure
-    enableArithAbort: true,       // Evita errores de cálculo
-    trustServerCertificate: false, // Mayor seguridad
-    connectTimeout: 15000         // ⏱️ Tiempo de espera aumentado
+    encrypt: true,
+    enableArithAbort: true,
+    trustServerCertificate: false,
+    connectTimeout: 15000
   },
   port: 1433
 };
 
-// 📦 Procesar datos enviados desde el formulario
+// 📦 Procesar datos del formulario
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
-// 📂 Rutas para mostrar las páginas
-// Página de inicio de sesión
+// 📂 Rutas de páginas
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// ✅ NUEVA RUTA: Página principal después de ingresar
 app.get('/principal.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'principal.html'));
 });
 
-// 🔌 Función para conectar a la base de datos
+// 🔌 Conectar a la base
 async function conectarBase() {
   try {
     await sql.connect(config);
-    console.log('✅ CONEXIÓN EXITOSA con Azure SQL');
+    console.log('✅ Conectado correctamente a Azure SQL');
   } catch (err) {
-    console.error('❌ ERROR DE CONEXIÓN:', err.message);
-    // Reintento automático si falla
+    console.error('❌ Error de conexión:', err.message);
     setTimeout(conectarBase, 10000);
   }
 }
 conectarBase();
 
-// 🔐 Verificar usuario y contraseña
+// 🔐 Verificar usuario y contraseña (CORREGIDO)
 app.post('/verificar', async (req, res) => {
   const { usuario, clave } = req.body;
 
-  // Validar que no estén vacíos
   if (!usuario || !clave) {
-    return res.json({ ok: false, mensaje: 'Ingrese usuario y contraseña' });
+    return res.json({ ok: false, mensaje: 'Complete ambos campos' });
   }
 
   try {
     const pool = await sql.connect(config);
     const resultado = await pool.request()
-      .input('usuario', sql.VarChar(50), usuario)
+      .input('usuario', sql.VarChar(100), usuario)
       .input('clave', sql.VarChar(100), clave)
-      .query(`SELECT id, usuario FROM Usuarios 
-              WHERE usuario = @usuario AND clave = @clave`);
+      .query(`
+        SELECT * 
+        FROM Usuarios 
+        WHERE usuario = @usuario 
+          AND clave = @clave
+      `);
+
+    console.log('🔍 Filas encontradas:', resultado.recordset.length);
 
     if (resultado.recordset.length > 0) {
-      res.json({ ok: true, mensaje: 'Acceso permitido' });
+      res.json({ ok: true, mensaje: 'Acceso correcto' });
     } else {
-      res.json({ ok: false, mensaje: 'Datos incorrectos' });
+      res.json({ ok: false, mensaje: 'Usuario o clave incorrectos' });
     }
 
   } catch (err) {
-    console.error('❌ Error al consultar:', err.message);
-    res.json({ ok: false, mensaje: 'No se pudo conectar con la base de datos' });
+    console.error('❌ Error en consulta:', err.message);
+    res.json({ ok: false, mensaje: 'Error al consultar la base' });
   }
 });
 
-// 🚀 Levantar el servidor
+// 🚀 Levantar servidor
 const PUERTO = process.env.PORT || 3000;
 app.listen(PUERTO, () => {
-  console.log(`✅ SISTEMA ACTIVO - Escuchando en el puerto ${PUERTO}`);
-  console.log(`🌐 Dirección: https://sistema-predicciones-arb.onrender.com`);
+  console.log(`🚀 Servidor activo en puerto ${PUERTO}`);
 });
