@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Predicciones ARB</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
+
+        body {
+            background-color: #f8f9fa;
+            color: #333;
+        }
+
+        /* Encabezado con espacio para logo */
+        header {
+            background-color: #007b8f;
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        /* Aquí irá el logo después */
+        .logo-placeholder {
+            width: 60px;
+            height: 60px;
+            background-color: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #007b8f;
+            font-size: 0.9rem;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+        }
+
+        /* Menú de navegación */
+        nav {
+            background-color: #006474;
+            padding: 0.7rem 2rem;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 0.5rem 0.8rem;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        nav a:hover {
+            background-color: #00505c;
+        }
+
+        /* Contenido principal */
+        main {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .bienvenida {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        }
+
+        .bienvenida h2 {
+            color: #007b8f;
+            margin-bottom: 1rem;
+        }
+
+        .bienvenida p {
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        footer {
+            text-align: center;
+            padding: 1rem;
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 2rem;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo-area">
+        <!-- Espacio para el logo -->
+        <div class="logo-placeholder">LOGO<br>ARB</div>
+        <h1>Sistema de Predicciones ARB</h1>
+    </div>
+</header>
+
+<nav>
+    <ul>
+        <li><a href="#">Inicio</a></li>
+        <li><a href="#">Generar Predicción</a></li>
+        <li><a href="#">Historial de Resultados</a></li>
+        <li><a href="#">Gestión de Datos</a></li>
+        <li><a href="#">Configuración</a></li>
+        <li><a href="#" onclick="cerrarSesion()">Cerrar Sesión</a></li>
+    </ul>
+</nav>
+
+<main>
+    <section class="bienvenida">
+        <h2>✅ Bienvenido al Sistema ARB</h2>
+        <p>Estás conectado correctamente a la base de datos. Desde aquí podés:</p>
+        <ul style="margin-left: 1.5rem; line-height: 1.8rem;">
+            <li>Generar combinaciones y predicciones de números</li>
+            <li>Consultar resultados anteriores</li>
+            <li>Administrar tus registros y tablas</li>
+            <li>Exportar datos para análisis</li>
+        </ul>
+        <br>
+        <p>En las próximas versiones agregaremos el logo personalizado y conectaremos cada opción del menú con sus respectivas funciones.</p>
+    </section>
+</main>
+
+<footer>
+    © 2026 Sistema de Predicciones ARB | Versión en línea
+</footer>
+
+<script>
+    function cerrarSesion() {
+        if (confirm("¿Seguro que querés salir?")) {
+            window.location.href = "/";
+        }
+    }
+</script>
+
+</body>
+</html>
