@@ -23,6 +23,8 @@ const config = {
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
+app.use(express.static(__dirname)); // 🔑 Esto permite cargar imágenes, CSS, etc.
+
 // 📂 Rutas de páginas
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
