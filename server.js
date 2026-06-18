@@ -1,87 +1,92 @@
-// Librerías necesarias
 const express = require('express');
-const sql = require('mssql');
-const path = require('path');
+const cors = require('cors');
 const app = express();
+const puerto = 3000;
 
-// ⚙️ Configuración segura para Azure SQL
+app.use(cors());
+app.use(express.json());
+app.use(express.static('public'));
+
+// 🔌 CONEXIÓN DIRECTA A TU BASE AZURE SQL
+const { Connection, Request } = require('tedious'); // Mejor para Azure SQL
+
 const config = {
-  server: process.env.DB_SERVER,
-  database: process.env.DB_NAME,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  options: {
-    encrypt: true,
-    enableArithAbort: true,
-    trustServerCertificate: false,
-    connectTimeout: 15000
+  server: 'TU_SERVIDOR_AZURE.database.windows.net', // Ej: midbazar.database.windows.net
+  authentication: {
+    type: 'default',
+    options: {
+      userName: 'TU_USUARIO_AZURE',
+      password: 'TU_CONTRASEÑA_AZURE'
+    }
   },
-  port: 1433
+  options: {
+    database: 'TU_NOMBRE_BASE_EN_AZURE',
+    encrypt: true, // Obligatorio en Azure
+    trustServerCertificate: false,
+    connectTimeout: 30000
+  }
 };
 
-// 📦 Procesar datos del formulario
-app.use(express.json({ limit: '1mb' }));
-app.use(express.urlencoded({ extended: true, limit: '1mb' }));
-
-app.use(express.static(__dirname)); // 🔑 Esto permite cargar imágenes, CSS, etc.
-
-// 📂 Rutas de páginas
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-app.get('/principal.html', (req, res) => {
-  res.sendFile(path.join(__dirname, 'principal.html'));
-});
-
-// 🔌 Conectar a la base
-async function conectarBase() {
-  try {
-    await sql.connect(config);
-    console.log('✅ Conectado correctamente a Azure SQL');
-  } catch (err) {
-    console.error('❌ Error de conexión:', err.message);
-    setTimeout(conectarBase, 10000);
-  }
+// Función auxiliar para consultas
+function ejecutarConsulta(sql, parametros = []) {
+  return new Promise((resolve, reject) => {
+    const conexion = new Connection(config);
+    conexion.on('connect', err => {
+      if (err) return reject(err);
+      const solicitud = new Request(sql, (err) => {
+        if (err) return reject(err);
+      });
+      parametros.forEach(p => solicitud.addParameter(p.nombre, p.tipo, p.valor));
+      const filas = [];
+      solicitud.on('row', fila => filas.push(fila));
+      solicitud.on('done', () => resolve(filas));
+      conexion.execSql(solicitud);
+    });
+    conexion.connect();
+  });
 }
-conectarBase();
 
-// 🔐 Verificar usuario y contraseña (CORREGIDO)
-app.post('/verificar', async (req, res) => {
-  const { usuario, clave } = req.body;
-
-  if (!usuario || !clave) {
-    return res.json({ ok: false, mensaje: 'Complete ambos campos' });
-  }
-
+// 📡 API: Leer datos de TU tabla existente en Azure
+app.get('/api/consultar-numeros', async (req, res) => {
   try {
-    const pool = await sql.connect(config);
-    const resultado = await pool.request()
-      .input('usuario', sql.VarChar(100), usuario)
-      .input('clave', sql.VarChar(100), clave)
-      .query(`
-        SELECT * 
-        FROM Usuarios 
-        WHERE usuario = @usuario 
-          AND clave = @clave
-      `);
-
-    console.log('🔍 Filas encontradas:', resultado.recordset.length);
-
-    if (resultado.recordset.length > 0) {
-      res.json({ ok: true, mensaje: 'Acceso correcto' });
-    } else {
-      res.json({ ok: false, mensaje: 'Usuario o clave incorrectos' });
-    }
-
-  } catch (err) {
-    console.error('❌ Error en consulta:', err.message);
-    res.json({ ok: false, mensaje: 'Error al consultar la base' });
+    // ⚠️ AQUÍ pones el NOMBRE REAL DE TU TABLA y columnas que ya usas
+    const sql = `
+      SELECT TOP 150 Numero, Pais, Fecha, Hora 
+      FROM TuTablaExistente 
+      ORDER BY Fecha DESC, Hora DESC
+    `;
+    const resultado = await ejecutarConsulta(sql);
+    res.json(resultado);
+  } catch (error) {
+    console.error('Error al consultar Azure:', error);
+    res.status(500).json({ error: 'No se pudo conectar a la base' });
   }
 });
 
-// 🚀 Levantar servidor
-const PUERTO = process.env.PORT || 3000;
-app.listen(PUERTO, () => {
-  console.log(`🚀 Servidor activo en puerto ${PUERTO}`);
+// 💾 API: Guardar predicción en TU tabla o la que definas
+app.post('/api/grabar-prediccion', async (req, res) => {
+  try {
+    const { fecha, idPais, idHora, tira, juego } = req.body;
+    // ⚠️ AQUÍ usas tu tabla existente o la que ya tengas para guardar
+    const sql = `
+      INSERT INTO TuTablaPrediccionesExistente (Fecha, IdPais, IdHora, Tira, Juego)
+      VALUES (@fecha, @pais, @hora, @tira, @juego)
+    `;
+    const parametros = [
+      { nombre: 'fecha', tipo: 'DateTime', valor: fecha },
+      { nombre: 'pais', tipo: 'Int', valor: idPais },
+      { nombre: 'hora', tipo: 'Int', valor: idHora },
+      { nombre: 'tira', tipo: 'VarChar', valor: tira },
+      { nombre: 'juego', tipo: 'VarChar', valor: juego }
+    ];
+    await ejecutarConsulta(sql, parametros);
+    res.json({ ok: true, mensaje: 'Guardado en Azure correctamente' });
+  } catch (error) {
+    console.error('Error al guardar en Azure:', error);
+    res.status(500).json({ ok: false, mensaje: 'Error en base de datos' });
+  }
+});
+
+app.listen(puerto, () => {
+  console.log(`Servidor listo en http://localhost:${puerto} → conectado a Azure`);
 });
