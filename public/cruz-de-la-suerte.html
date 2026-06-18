@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cruz de la Suerte - Sistema ARB</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        fondo: '#0a0a1a',
+                        panel: '#12122b',
+                        azul: '#007acc',
+                        verde: '#00b341',
+                        rojo: '#e53935',
+                        dorado: '#ffd700',
+                        cyan: '#00e5ff'
+                    },
+                    fontFamily: {
+                        consolas: ['Consolas', 'monospace'],
+                        segoe: ['Segoe UI', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .texto-sombra { text-shadow: 0 0 8px rgba(0,229,255,0.6); }
+            .caja-texto { @apply bg-gray-900 border border-cyan-500/40 rounded p-2 text-white font-consolas; }
+            .btn { @apply px-3 py-2 rounded font-semibold transition-all hover:brightness-110; }
+            .btn-azul { @apply bg-azul text-white; }
+            .btn-verde { @apply bg-verde text-white; }
+            .btn-rojo { @apply bg-rojo text-white; }
+            .btn-amarillo { @apply bg-amber-500 text-black; }
+        }
+    </style>
+</head>
+<body class="bg-fondo text-white font-segoe min-h-screen p-4">
+
+    <!-- Barra de menú superior -->
+    <div class="bg-panel rounded-t-lg p-2 flex gap-2 border-b border-cyan-500/30">
+        <button id="btnEjecutar" class="btn btn-azul">Ejecutar Listado</button>
+        <button id="btnLimpiar" class="btn btn-azul">Limpiar Cajas</button>
+        <button class="btn btn-azul">Escudo de Protección</button>
+        <button class="btn btn-azul">Volcán</button>
+        <button class="btn btn-azul">Reporte</button>
+        <button id="btnGrabar" class="btn btn-verde">Grabar</button>
+        <button class="btn btn-rojo ml-auto">Salir</button>
+    </div>
+
+    <!-- Contenedor principal -->
+    <div class="bg-panel rounded-b-lg p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Columna Izquierda: Fecha y Tabla de Datos -->
+        <div class="lg:col-span-4 space-y-4">
+            <div class="flex items-center gap-3">
+                <label class="text-cyan-300 font-semibold">Fecha Base:</label>
+                <input type="date" id="fechaBase" class="caja-texto" value="2026-06-18">
+                <button id="btnVerHistorial" class="btn btn-azul text-sm">Ver Histórico</button>
+            </div>
+
+            <!-- Tabla de Números -->
+            <div class="bg-gray-900 rounded border border-cyan-500/40 p-2 h-[320px] overflow-auto">
+                <table id="tablaNumeros" class="w-full text-center">
+                    <thead class="bg-cyan-900/50">
+                        <tr>
+                            <th class="p-2">Núm</th>
+                            <th class="p-2">País</th>
+                            <th class="p-2">Fecha</th>
+                            <th class="p-2">Hora</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cuerpoTabla" class="font-consolas text-sm">
+                        <!-- Se llena desde JS / Servidor -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Selección de Cantidad a Jugar -->
+            <div class="flex items-center gap-3">
+                <label class="text-cyan-300 font-semibold">Cantidad a Jugar:</label>
+                <select id="cmbJuego" class="caja-texto flex-1">
+                    <option>Jugar 1</option>
+                    <option>Jugar 5</option>
+                    <option>Jugar 10</option>
+                    <option>Jugar 20</option>
+                    <option>Jugar 30</option>
+                    <option>Jugar 40</option>
+                    <option>Jugar 50</option>
+                    <option>Jugar 60</option>
+                    <option>Jugar 70</option>
+                    <option>Jugar 75</option>
+                    <option>Jugar 80</option>
+                    <option>Jugar 85</option>
+                    <option selected>Jugar 90</option>
+                    <option>Jugar 92</option>
+                    <option>Jugar 95</option>
+                </select>
+            </div>
+
+            <div class="flex gap-2 mt-2">
+                <button id="btnRecomendacion" class="btn btn-amarillo flex-1">Recomendación</button>
+                <button id="btnSorteoFuturo" class="btn btn-cyan-500 flex-1 bg-cyan-700 hover:bg-cyan-600">Sorteo Futuro</button>
+            </div>
+        </div>
+
+        <!-- Columna Central: Cruz de la Suerte -->
+        <div class="lg:col-span-4 flex flex-col items-center justify-center">
+            <h2 class="text-2xl font-bold text-dorado mb-4 texto-sombra">CRUZ DE LA SUERTE "ARB"</h2>
+            <div id="lblAncla" class="text-xl text-cyan-300 font-semibold mb-6">Ancla: --</div>
+
+            <!-- Estructura de la Cruz -->
+            <div class="relative w-[320px] h-[320px]">
+                <!-- Esquinas -->
+                <input type="text" id="txtSuperiorIzquierda" class="absolute top-0 left-0 w-12 h-12 caja-texto text-center text-xl font-bold" maxlength="1">
+                <input type="text" id="txtSuperiorDerecha" class="absolute top-0 right-0 w-12 h-12 caja-texto text-center text-xl font-bold" maxlength="1">
+                <input type="text" id="txtInferiorIzquierda" class="absolute bottom-0 left-0 w-12 h-12 caja-texto text-center text-xl font-bold" maxlength="1">
+                <input type="text" id="txtInferiorDerecha" class="absolute bottom-0 right-0 w-12 h-12 caja-texto text-center text-xl font-bold" maxlength="1">
+
+                <!-- Internos -->
+                <input type="text" id="txtInternoSuperior" class="absolute top-1/4 left-1/2 -translate-x-1/2 w-12 h-12 caja-texto text-center text-xl font-bold" maxlength="1">
+                <input type="text" id="txtInternoIzquierdo" class="absolute left-1/4 top-1/2 -translate-y-1/2 w-12 h-12 caja-texto text-center text-xl font-bold" maxlength="1">
+                <input type="text" id="txtInternoDerecho" class="absolute right-1/4 top-1/2 -translate-y-1/2 w-12 h-12 caja-texto text-center text-xl font-bold" maxlength="1">
+                <input type="text" id="txtInternoInferior" class="absolute bottom-1/4 left-1/2 -translate-x-1/2 w-12 h-12 caja-texto text-center text-xl font-bold" maxlength="1">
+
+                <!-- Centro -->
+                <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-red-700 rounded-full flex items-center justify-center text-white font-bold text-xl">
+                    🎲
+                </div>
+            </div>
+        </div>
+
+        <!-- Columna Derecha: Listas y Resultados -->
+        <div class="lg:col-span-4 space-y-4">
+            <!-- Esquinas y Diagonales -->
+            <div>
+                <label class="text-cyan-300 font-semibold block mb-1">Esquinas y Diagonales:</label>
+                <textarea id="txtEsquinasYDiagonales" class="caja-texto w-full h-14 resize-none" readonly></textarea>
+            </div>
+
+            <!-- Internos -->
+            <div>
+                <label class="text-cyan-300 font-semibold block mb-1">Combinaciones Internas:</label>
+                <textarea id="txtCombinacionesInternas" class="caja-texto w-full h-14 resize-none" readonly></textarea>
+            </div>
+
+            <!-- Lista Verde - A Jugar -->
+            <div>
+                <div class="flex justify-between items-center mb-1">
+                    <label class="text-green-400 font-semibold">Lista a Jugar:</label>
+                    <button id="btnCopiarVerde" class="btn btn-verde text-xs">Copiar</button>
+                </div>
+                <textarea id="txtCombinaciones" class="caja-texto w-full h-20 resize-none border-green-500/40" readonly></textarea>
+            </div>
+
+            <!-- Lista Roja - Excluidos -->
+            <div>
+                <div class="flex justify-between items-center mb-1">
+                    <label class="text-red-400 font-semibold">Números Excluidos:</label>
+                    <button id="btnCopiarRojo" class="btn btn-rojo text-xs">Copiar</button>
+                </div>
+                <textarea id="txtCombinacionesExcluidas" class="caja-texto w-full h-16 resize-none border-red-500/40" readonly></textarea>
+            </div>
+
+            <!-- Combinaciones Unificadas -->
+            <div>
+                <label class="text-cyan-300 font-semibold block mb-1">Combina Listados:</label>
+                <textarea id="txtCombinaListados" class="caja-texto w-full h-14 resize-none" readonly></textarea>
+            </div>
+        </div>
+    </div>
+
+    <!-- Carga de lógica JS -->
+    <script src="/cruz-de-la-suerte.js"></script>
+</body>
+</html>
