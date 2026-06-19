@@ -6,12 +6,12 @@ import os
 app = Flask(__name__, static_folder=".", static_url_path="")
 CORS(app)
 
-# 🔌 Conexión corregida para Azure SQL
+# 🔌 Conexión usando los nombres de variables que ya tienes en Render
 def get_connection():
-    server = os.environ.get("AZURE_SQL_SERVER")
-    database = os.environ.get("AZURE_SQL_DB")
-    username = os.environ.get("AZURE_SQL_USER")
-    password = os.environ.get("AZURE_SQL_PASS")
+    server = os.environ.get("DB_SERVER")
+    database = os.environ.get("DB_NAME")
+    username = os.environ.get("DB_USER")
+    password = os.environ.get("DB_PASSWORD")
 
     return pytds.connect(
         server=server,
@@ -24,7 +24,7 @@ def get_connection():
         timeout=30
     )
 
-# 📄 Rutas
+# 📄 Rutas de navegación
 @app.route("/")
 def ir_a_login():
     return send_from_directory(".", "index.html")
@@ -37,7 +37,7 @@ def ir_a_principal():
 def ir_a_cruz():
     return send_from_directory("public", "cruz-de-la-suerte.html")
 
-# 🔐 Login con depuración
+# 🔐 Verificar inicio de sesión
 @app.route("/api/login", methods=["POST"])
 def login():
     try:
@@ -47,30 +47,33 @@ def login():
 
         conn = get_connection()
         cursor = conn.cursor()
-        # Asegúrate de que el nombre de la tabla y columnas coincidan EXACTAMENTE con Azure
+        # Asegúrate que el nombre de tabla y columnas coincidan con tu base
         cursor.execute("SELECT 1 FROM Usuarios WHERE Usuario = %s AND Clave = %s", (usuario, clave))
-        resultado = cursor.fetchone()
+        valido = cursor.fetchone() is not None
         conn.close()
 
-        return jsonify({"ok": resultado is not None})
-
+        return jsonify({"ok": valido})
     except Exception as e:
-        print("Error en login:", str(e))
+        print("Error en conexión/login:", str(e))
         return jsonify({"ok": False, "error": str(e)}), 500
 
-# 📊 Consulta de números
+# 📊 Consultar números históricos
 @app.route("/api/consultar-numeros", methods=["GET"])
 def consultar():
     try:
         conn = get_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT TOP 150 Numero, Pais, Fecha, Hora FROM Numeros ORDER BY Fecha DESC, Hora DESC")
+        cursor.execute("""
+            SELECT TOP 150 Numero, Pais, Fecha, Hora 
+            FROM Numeros 
+            ORDER BY Fecha DESC, Hora DESC
+        """)
         columnas = [desc[0] for desc in cursor.description]
         filas = [dict(zip(columnas, fila)) for fila in cursor.fetchall()]
         conn.close()
         return jsonify(filas)
     except Exception as e:
-        print("Error en consulta:", str(e))
+        print("Error en consulta de números:", str(e))
         return jsonify({"error": str(e)}), 500
 
 # 💾 Guardar predicción
@@ -88,7 +91,7 @@ def grabar():
         conn.close()
         return jsonify({"ok": True})
     except Exception as e:
-        print("Error al guardar:", str(e))
+        print("Error al guardar predicción:", str(e))
         return jsonify({"ok": False, "error": str(e)})
 
 if __name__ == "__main__":
