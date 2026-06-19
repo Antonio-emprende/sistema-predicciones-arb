@@ -46,7 +46,8 @@
             }
 
             try {
-                const respuesta = await fetch('/verificar', {
+                // ✅ Ruta actualizada para que coincida con el servidor Python
+                const respuesta = await fetch('/api/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ usuario, clave })
@@ -57,9 +58,9 @@
                 if (datos.ok) {
                     mensaje.textContent = '✅ Acceso correcto';
                     mensaje.style.color = 'green';
-                    // AQUÍ ponés la dirección de tu pantalla principal
+                    // ✅ Redirección correcta a la pantalla principal
                     setTimeout(() => {
-                        window.location.href = '/principal.html';
+                        window.location.href = '/principal';
                     }, 800);
                 } else {
                     mensaje.textContent = '❌ Usuario o clave incorrectos';
