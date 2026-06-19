@@ -6,7 +6,7 @@ import os
 app = Flask(__name__, static_folder=".", static_url_path="")
 CORS(app)
 
-# 🔌 Conexión corregida para pytds 1.15
+# 🔌 Conexión correcta
 def get_connection():
     server = os.environ.get("DB_SERVER")
     database = os.environ.get("DB_NAME")
@@ -36,7 +36,7 @@ def ir_a_principal():
 def ir_a_cruz():
     return send_from_directory("public", "cruz-de-la-suerte.html")
 
-# 🔐 Login con depuración
+# 🔐 Login corregido
 @app.route("/api/login", methods=["POST"])
 def login():
     try:
@@ -48,15 +48,17 @@ def login():
 
         conn = get_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT COUNT(*) FROM Usuarios WHERE Usuario = %s AND Clave = %s", (usuario, clave))
-        cantidad = cursor.fetchone()[0]
+        # Consulta más segura, devuelve directamente el registro
+        cursor.execute("SELECT 1 FROM Usuarios WHERE Usuario = %s AND Clave = %s", (usuario, clave))
+        resultado = cursor.fetchone()
         conn.close()
 
-        if cantidad > 0:
+        # Verificamos si existe el registro, sin comparar tipos
+        if resultado is not None:
             print("✅ Acceso correcto")
             return jsonify({"ok": True})
         else:
-            print("❌ Usuario o clave incorrectos")
+            print("❌ Usuario o contraseña incorrectos")
             return jsonify({"ok": False})
 
     except Exception as e:
@@ -68,10 +70,9 @@ def login():
 def consultar():
     try:
         conn = get_connection()
-        cursor = conn.cursor()
+        cursor = conn.cursor(as_dict=True)
         cursor.execute("SELECT TOP 150 Numero, Pais, Fecha, Hora FROM Numeros ORDER BY Fecha DESC, Hora DESC")
-        columnas = [desc[0] for desc in cursor.description]
-        filas = [dict(zip(columnas, fila)) for fila in cursor.fetchall()]
+        filas = cursor.fetchall()
         conn.close()
         return jsonify(filas)
     except Exception as e:
