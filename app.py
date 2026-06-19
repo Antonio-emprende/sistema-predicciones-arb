@@ -1,28 +1,44 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-import pyodbc
+import pymssql
 import os
 
-app = Flask(__name__, static_folder=".", static_url_path="") # Sirve todos los archivos
+app = Flask(__name__, static_folder=".", static_url_path="")
 CORS(app)
 
-# Conexión a Azure SQL
+# Conexión a Azure SQL con pymssql
 def get_connection():
     server = os.environ.get("AZURE_SQL_SERVER")
     database = os.environ.get("AZURE_SQL_DB")
     username = os.environ.get("AZURE_SQL_USER")
     password = os.environ.get("AZURE_SQL_PASS")
-    conn_str = (
-        "DRIVER={ODBC Driver 18 for SQL Server};"
-        f"SERVER={server};"
-        f"DATABASE={database};"
-        f"UID={username};"
-        f"PWD={password};"
-        "Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;"
-    )
-    return pyodbc.connect(conn_str)
 
-# 🔐 RUTA: Login
+    return pymssql.connect(
+        server=server,
+        user=username,
+        password=password,
+        database=database,
+        port=1433,
+        tds_version="7.0",
+        login_timeout=30
+    )
+
+# Ruta de inicio → Login
+@app.route("/")
+def ir_a_login():
+    return send_from_directory(".", "index.html")
+
+# Ruta pantalla principal
+@app.route("/principal")
+def ir_a_principal():
+    return send_from_directory(".", "principal.html")
+
+# Ruta Cruz de la Suerte
+@app.route("/cruz-de-la-suerte")
+def ir_a_cruz():
+    return send_from_directory("public", "cruz-de-la-suerte.html")
+
+# Verificar usuario
 @app.route("/api/login", methods=["POST"])
 def login():
     try:
@@ -31,58 +47,49 @@ def login():
         clave = datos.get("clave")
 
         conn = get_connection()
-        cursor = conn.cursor()
-        # ⚠️ Pon aquí tu tabla de usuarios real
-        cursor.execute("SELECT Id FROM Usuarios WHERE Usuario = ? AND Clave = ?", usuario, clave)
-        usuario_valido = cursor.fetchone()
+        cursor = conn.cursor(as_dict=True)
+        cursor.execute("SELECT Id FROM Usuarios WHERE Usuario = %s AND Clave = %s", (usuario, clave))
+        valido = cursor.fetchone()
         conn.close()
 
-        if usuario_valido:
-            return jsonify({"ok": True, "mensaje": "Acceso correcto"})
-        else:
-            return jsonify({"ok": False, "mensaje": "Usuario o contraseña incorrectos"})
+        return jsonify({"ok": bool(valido)})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
-# 📄 RUTAS PARA LAS PANTALLAS
-@app.route("/")
-def ir_a_login():
-    return send_from_directory(".", "index.html") # Entra directo al login
-
-@app.route("/principal")
-def ir_a_principal():
-    return send_from_directory(".", "principal.html") # Pantalla principal con menús
-
-@app.route("/cruz-de-la-suerte")
-def ir_a_cruz():
-    return send_from_directory("public", "cruz-de-la-suerte.html") # Desde aquí se abre
-
-# 📊 RUTAS DE DATOS
+# Consultar números históricos
 @app.route("/api/consultar-numeros", methods=["GET"])
 def consultar():
     try:
         conn = get_connection()
-        cursor = conn.cursor()
-        # ⚠️ Tu tabla de números real
-        cursor.execute("SELECT TOP 150 Numero, Pais, Fecha, Hora FROM Numeros ORDER BY Fecha DESC, Hora DESC")
-        columnas = [c[0] for c in cursor.description]
-        datos = [dict(zip(columnas, fila)) for fila in cursor.fetchall()]
+        cursor = conn.cursor(as_dict=True)
+        cursor.execute("""
+            SELECT TOP 150 Numero, Pais, Fecha, Hora 
+            FROM Numeros 
+            ORDER BY Fecha DESC, Hora DESC
+        """)
+        filas = cursor.fetchall()
         conn.close()
-        return jsonify(datos)
+        return jsonify(filas)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# Guardar predicción
 @app.route("/api/grabar-prediccion", methods=["POST"])
 def grabar():
     try:
-        d = request.get_json()
+        datos = request.get_json()
+        fecha = datos.get("fecha")
+        id_pais = datos.get("idPais")
+        id_hora = datos.get("idHora")
+        tira = datos.get("tira")
+        juego = datos.get("juego")
+
         conn = get_connection()
         cursor = conn.cursor()
-        # ⚠️ Tu tabla de predicciones real
         cursor.execute("""
-            INSERT INTO Predicciones (Fecha, IdPais, IdHora, TiraRankeada, Juego)
-            VALUES (?, ?, ?, ?, ?)
-        """, d["fecha"], d["idPais"], d["idHora"], d["tira"], d["juego"])
+            INSERT INTO Predicciones (Fecha, IdPais, IdHora, TiraRankeada, JuegoSeleccionado)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (fecha, id_pais, id_hora, tira, juego))
         conn.commit()
         conn.close()
         return jsonify({"ok": True})
