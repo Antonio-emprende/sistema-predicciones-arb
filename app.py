@@ -12,7 +12,7 @@ DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 PORT = int(os.getenv("PORT", 3000))
 
-# Conexión adaptada para funcionar sin ODBC del sistema
+# Conexión adaptada para funcionar sin instalar controladores del sistema
 def get_db():
     conn_str = (
         "DRIVER={ODBC Driver 18 for SQL Server};"
