@@ -6,7 +6,7 @@ import os
 app = Flask(__name__, static_folder=".", static_url_path="")
 CORS(app)
 
-# 🔌 Conexión con los nombres que tienes en Render
+# 🔌 Conexión corregida para pytds 1.15
 def get_connection():
     server = os.environ.get("DB_SERVER")
     database = os.environ.get("DB_NAME")
@@ -20,7 +20,6 @@ def get_connection():
         password=password,
         database=database,
         tds_version="7.4",
-        encryption="require",
         timeout=30
     )
 
@@ -37,7 +36,7 @@ def ir_a_principal():
 def ir_a_cruz():
     return send_from_directory("public", "cruz-de-la-suerte.html")
 
-# 🔐 Login con depuración para ver el error real
+# 🔐 Login con depuración
 @app.route("/api/login", methods=["POST"])
 def login():
     try:
@@ -45,11 +44,10 @@ def login():
         usuario = datos.get("usuario", "").strip()
         clave = datos.get("clave", "").strip()
 
-        print(f"Intento: Usuario={usuario}, Clave={clave}") # Para ver en logs
+        print(f"Intento: Usuario={usuario}")
 
         conn = get_connection()
         cursor = conn.cursor()
-        # Verifica que el nombre de tabla y columnas coincidan EXACTAMENTE con tu base
         cursor.execute("SELECT COUNT(*) FROM Usuarios WHERE Usuario = %s AND Clave = %s", (usuario, clave))
         cantidad = cursor.fetchone()[0]
         conn.close()
@@ -58,11 +56,11 @@ def login():
             print("✅ Acceso correcto")
             return jsonify({"ok": True})
         else:
-            print("❌ Usuario o contraseña no coinciden")
+            print("❌ Usuario o clave incorrectos")
             return jsonify({"ok": False})
 
     except Exception as e:
-        print("❌ ERROR en conexión/consulta:", str(e))
+        print("❌ ERROR:", str(e))
         return jsonify({"ok": False, "error": str(e)}), 500
 
 # 📊 Consulta de números
@@ -77,7 +75,7 @@ def consultar():
         conn.close()
         return jsonify(filas)
     except Exception as e:
-        print("❌ Error en consulta números:", str(e))
+        print("❌ Error consulta:", str(e))
         return jsonify({"error": str(e)}), 500
 
 # 💾 Guardar predicción
@@ -95,7 +93,7 @@ def grabar():
         conn.close()
         return jsonify({"ok": True})
     except Exception as e:
-        print("❌ Error al guardar:", str(e))
+        print("❌ Error guardar:", str(e))
         return jsonify({"ok": False, "error": str(e)})
 
 if __name__ == "__main__":
