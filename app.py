@@ -36,29 +36,30 @@ def ir_a_principal():
 def ir_a_cruz():
     return send_from_directory("public", "cruz-de-la-suerte.html")
 
-# 🔐 Login con nombres EXACTOS de tu base
+# 🔐 Login adaptado a tipos de datos
 @app.route("/api/login", methods=["POST"])
 def login():
     try:
         datos = request.get_json()
         usuario = datos.get("usuario", "").strip()
-        clave = datos.get("clave", "").strip()
+        # Convertimos la contraseña a número para coincidir con la base
+        try:
+            clave = int(datos.get("clave", "").strip())
+        except ValueError:
+            return jsonify({"ok": False, "error": "La contraseña debe ser numérica"})
 
         conn = get_connection()
         cursor = conn.cursor()
 
-        # Tabla: usuarios | Columnas: usuario, clave
+        # Nombres exactos: tabla "usuarios", columnas "usuario" y "clave"
         cursor.execute("SELECT 1 FROM usuarios WHERE usuario = %s AND clave = %s", (usuario, clave))
         existe = cursor.fetchone()
         conn.close()
 
-        if existe:
-            return jsonify({"ok": True})
-        else:
-            return jsonify({"ok": False})
+        return jsonify({"ok": existe is not None})
 
     except Exception as e:
-        print("❌ Error:", str(e))
+        print("❌ Error en login:", str(e))
         return jsonify({"ok": False, "error": str(e)}), 500
 
 # 📊 Consultar números
