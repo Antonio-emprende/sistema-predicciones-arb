@@ -1,11 +1,11 @@
 import os
 from flask import Flask, render_template, request, redirect, url_for, flash
-import pyodbc
+import pymssql
 
 app = Flask(__name__)
-app.secret_key = os.getenv("FLASK_SECRET", "clave_segura_arb_2026")
+app.secret_key = os.getenv("FLASK_SECRET", "clave_segura_2026")
 
-# Variables de entorno
+# Leer variables de entorno
 DB_SERVER = os.getenv("DB_SERVER")
 DB_NAME = os.getenv("DB_NAME")
 DB_USER = os.getenv("DB_USER")
@@ -14,19 +14,18 @@ PORT = int(os.getenv("PORT", 3000))
 
 # Conexión a Azure SQL
 def get_db():
-    conn_str = (
-        "DRIVER={ODBC Driver 18 for SQL Server};"
-        f"SERVER={DB_SERVER};"
-        f"DATABASE={DB_NAME};"
-        f"UID={DB_USER};"
-        f"PWD={DB_PASSWORD};"
-        "Encrypt=yes;"
-        "TrustServerCertificate=no;"
-        "Connection Timeout=15;"
+    return pymssql.connect(
+        server=DB_SERVER,
+        user=DB_USER,
+        password=DB_PASSWORD,
+        database=DB_NAME,
+        port=1433,
+        tds_version="7.3",
+        encrypt=True,
+        timeout=15
     )
-    return pyodbc.connect(conn_str)
 
-# Ruta de inicio
+# Ruta de inicio de sesión
 @app.route("/", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -35,7 +34,7 @@ def login():
         try:
             conn = get_db()
             cursor = conn.cursor()
-            cursor.execute("SELECT 1 FROM usuarios WHERE usuario = ? AND contraseña = ?", usuario, contraseña)
+            cursor.execute("SELECT 1 FROM usuarios WHERE usuario = %s AND contraseña = %s", (usuario, contraseña))
             existe = cursor.fetchone()
             conn.close()
             if existe:
@@ -43,10 +42,11 @@ def login():
             else:
                 flash("Usuario o contraseña incorrectos")
         except Exception as e:
-            print("Error:", e)
-            flash("Error de conexión con la base de datos")
+            print("Error de conexión:", e)
+            flash("No se pudo conectar a la base de datos")
     return render_template("login.html")
 
+# Ruta del panel principal
 @app.route("/dashboard")
 def dashboard():
     return render_template("principal.html")
