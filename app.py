@@ -6,7 +6,7 @@ import os
 app = Flask(__name__, static_folder=".", static_url_path="")
 CORS(app)
 
-# 🔌 Conexión correcta
+# 🔌 Conexión
 def get_connection():
     server = os.environ.get("DB_SERVER")
     database = os.environ.get("DB_NAME")
@@ -36,7 +36,7 @@ def ir_a_principal():
 def ir_a_cruz():
     return send_from_directory("public", "cruz-de-la-suerte.html")
 
-# 🔐 Login corregido
+# 🔐 Login SIN comparaciones de tipos
 @app.route("/api/login", methods=["POST"])
 def login():
     try:
@@ -48,13 +48,13 @@ def login():
 
         conn = get_connection()
         cursor = conn.cursor()
-        # Consulta más segura, devuelve directamente el registro
+        # Solo buscamos si existe el registro
         cursor.execute("SELECT 1 FROM Usuarios WHERE Usuario = %s AND Clave = %s", (usuario, clave))
-        resultado = cursor.fetchone()
+        existe = cursor.fetchone()
         conn.close()
 
-        # Verificamos si existe el registro, sin comparar tipos
-        if resultado is not None:
+        # Verificamos solo si hay resultado o no
+        if existe:
             print("✅ Acceso correcto")
             return jsonify({"ok": True})
         else:
@@ -65,7 +65,7 @@ def login():
         print("❌ ERROR:", str(e))
         return jsonify({"ok": False, "error": str(e)}), 500
 
-# 📊 Consulta de números
+# 📊 Consulta números
 @app.route("/api/consultar-numeros", methods=["GET"])
 def consultar():
     try:
