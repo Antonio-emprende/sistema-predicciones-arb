@@ -12,7 +12,7 @@ DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 PORT = int(os.getenv("PORT", 3000))
 
-# Conexión Azure SQL
+# Conexión adaptada para funcionar sin ODBC del sistema
 def get_db():
     conn_str = (
         "DRIVER={ODBC Driver 18 for SQL Server};"
@@ -21,11 +21,12 @@ def get_db():
         f"UID={DB_USER};"
         f"PWD={DB_PASSWORD};"
         "Encrypt=yes;"
-        "TrustServerCertificate=no;"
+        "TrustServerCertificate=yes;"
         "Connection Timeout=15;"
     )
     return pyodbc.connect(conn_str)
 
+# Rutas
 @app.route("/", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -41,7 +42,7 @@ def login():
                 return redirect(url_for("dashboard"))
             flash("Usuario o contraseña incorrectos")
         except Exception as e:
-            print("Error:", e)
+            print("Error:", str(e))
             flash("No se pudo conectar a la base de datos")
     return render_template("login.html")
 
