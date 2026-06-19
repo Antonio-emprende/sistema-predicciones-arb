@@ -36,7 +36,7 @@ def ir_a_principal():
 def ir_a_cruz():
     return send_from_directory("public", "cruz-de-la-suerte.html")
 
-# 🔐 Login SIN comparaciones de tipos
+# 🔐 Login con nombres EXACTOS de tu base
 @app.route("/api/login", methods=["POST"])
 def login():
     try:
@@ -44,28 +44,24 @@ def login():
         usuario = datos.get("usuario", "").strip()
         clave = datos.get("clave", "").strip()
 
-        print(f"Intento: Usuario={usuario}")
-
         conn = get_connection()
         cursor = conn.cursor()
-        # Solo buscamos si existe el registro
-        cursor.execute("SELECT 1 FROM Usuarios WHERE Usuario = %s AND Clave = %s", (usuario, clave))
+
+        # Tabla: usuarios | Columnas: usuario, clave
+        cursor.execute("SELECT 1 FROM usuarios WHERE usuario = %s AND clave = %s", (usuario, clave))
         existe = cursor.fetchone()
         conn.close()
 
-        # Verificamos solo si hay resultado o no
         if existe:
-            print("✅ Acceso correcto")
             return jsonify({"ok": True})
         else:
-            print("❌ Usuario o contraseña incorrectos")
             return jsonify({"ok": False})
 
     except Exception as e:
-        print("❌ ERROR:", str(e))
+        print("❌ Error:", str(e))
         return jsonify({"ok": False, "error": str(e)}), 500
 
-# 📊 Consulta números
+# 📊 Consultar números
 @app.route("/api/consultar-numeros", methods=["GET"])
 def consultar():
     try:
